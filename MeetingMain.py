@@ -79,12 +79,12 @@ def bls_regression(train_x, train_y, test_x, test_y, s, C, NumFea, NumWin, NumEn
     WF = list()
     for i in range(NumWin):
         random.seed(i + u)
-        WeightFea = 2 * random.randn(train_x.shape[1] + 1, NumFea) - 1;
+        WeightFea = 2 * random.randn(train_x.shape[1] + 1, NumFea) - 1
         WF.append(WeightFea)
     #    random.seed(100)
-    WeightEnhan = 2 * random.randn(NumWin * NumFea + 1, NumEnhan) - 1;
+    WeightEnhan = 2 * random.randn(NumWin * NumFea + 1, NumEnhan) - 1
     time_start = time.time()
-    H1 = np.hstack([train_x, 0.1 * np.ones([train_x.shape[0], 1])]);
+    H1 = np.hstack([train_x, 0.1 * np.ones([train_x.shape[0], 1])])
     y = np.zeros([train_x.shape[0], NumWin * NumFea])
     WFSparse = list()
     distOfMaxAndMin = np.zeros(NumWin)
@@ -105,12 +105,12 @@ def bls_regression(train_x, train_y, test_x, test_y, s, C, NumFea, NumWin, NumEn
 
     H2 = np.hstack([y, 0.1 * np.ones([y.shape[0], 1])])
     T2 = H2.dot(WeightEnhan)
-    T2 = tanh(T2);
+    T2 = tanh(T2)
     T3 = np.hstack([y, T2])
     WeightTop = pinv(T3, C).dot(train_y)
 
     Training_time = time.time() - time_start
-    print('Training has been finished!');
+    print('Training has been finished!')
     print('The Total Training Time is : ', round(Training_time, 6), ' seconds')
     NetoutTrain = T3.dot(WeightTop)
 
@@ -118,7 +118,7 @@ def bls_regression(train_x, train_y, test_x, test_y, s, C, NumFea, NumWin, NumEn
     MAPE = sum(abs(NetoutTrain - train_y)) / train_y.mean() / train_y.shape[0]
     train_ERR = RMSE
     train_MAPE = MAPE
-    print('Training RMSE is : ', RMSE);
+    print('Training RMSE is : ', RMSE)
     print('Training MAPE is : ', MAPE)
     time_start = time.time()
     HH1 = np.hstack([test_x, 0.1 * np.ones([test_x.shape[0], 1])])
@@ -130,17 +130,17 @@ def bls_regression(train_x, train_y, test_x, test_y, s, C, NumFea, NumWin, NumEn
         yy1[:, NumFea * i:NumFea * (i + 1)] = TT1
 
     HH2 = np.hstack([yy1, 0.1 * np.ones([yy1.shape[0], 1])])
-    TT2 = tanh(HH2.dot(WeightEnhan));
+    TT2 = tanh(HH2.dot(WeightEnhan))
     TT3 = np.hstack([yy1, TT2])
     NetoutTest = TT3.dot(WeightTop)
-    RMSE = np.sqrt((NetoutTest - test_y).T * (NetoutTest - test_y) / test_y.shape[0]);
+    RMSE = np.sqrt((NetoutTest - test_y).T * (NetoutTest - test_y) / test_y.shape[0])
     MAPE = sum(abs(NetoutTest - test_y)) / test_y.mean() / test_y.shape[0]
     test_ERR = RMSE
     test_MAPE = MAPE
     # %% Calculate the testing accuracy
     Testing_time = time.time() - time_start
-    print('Testing has been finished!');
-    print('The Total Testing Time is : ', round(Testing_time, 6), ' seconds');
+    print('Testing has been finished!')
+    print('The Total Testing Time is : ', round(Testing_time, 6), ' seconds')
     print('Testing RMSE is : ', RMSE)
     print('Testing MAPE is : ', MAPE)
     return test_ERR, test_MAPE, Testing_time, train_ERR, train_MAPE, Training_time, NetoutTrain, NetoutTest
@@ -177,7 +177,7 @@ def preProcessing(filePath):    #数据预处理包括：PCA(only reconstruct no
     CSI = c['myData']
     AntennA, AntennB, AntennC = CSI[0][:][:], CSI[1][:][:], CSI[2][:][:]
 
-    csiPCA = np.zeros((3, 30, 50), dtype=np.float)  # array size 3*30*50
+    csiPCA = np.zeros((3, 30, 50), dtype=np.float32)  # array size 3*30*50
     listAntenna = [AntennA, AntennB, AntennC]
     for i in range(len(listAntenna)):
         lowerData, reconData = pca(listAntenna[i], 0.95)  # 信息提取率95%
@@ -213,14 +213,19 @@ def rawCSI():
         else:
             yLabel.append('%d'% (j+1) )
 
-    originalCSI=np.zeros((176, 4500), dtype=np.float)
+    originalCSI=np.zeros((176, 4500), dtype=np.float32) # 3 antennas
+    # originalCSI = np.zeros((176, 1500), dtype=np.float32) # 1 antenna
+    # originalCSI = np.zeros((176, 3000), dtype=np.float32) # 2 antennas
     count=0
     for i in range(16):
         for j in range(11):
-            filePath = "D:\pythonWork\indoor Location\MeetingSwapData\coordinate" + xLabel[i] + yLabel[j] + ".mat"
+            filePath = "./CSI-dataset/Meeting/coordinate" + xLabel[i] + yLabel[j] + ".mat"
             if (os.path.isfile(filePath)):
                 c = loadmat(filePath)
-                CSI = np.reshape(c['myData'], (1, 3 * 30 * 50))
+                CSI = np.reshape(c['myData'][..., :50], (1, 3 * 30 * 50)) # 3 antennas
+                # CSI = np.reshape(c['myData'][2, :,:50], (1, 1 * 30 * 50)) # 1 antenna
+                # CSI = np.reshape(c['myData'][[0, 2], :,:50], (1, 2 * 30 * 50)) # 2 antennas
+
                 originalCSI[count,:]=CSI
                 count+=1
     return originalCSI
@@ -257,18 +262,25 @@ def main():
     # savemat('MeetingRoomDataSet.mat', {'csiMatrix': DataSet})
 
     newName = []
-    label = np.empty((0, 2), dtype=np.int) #制作标签或位置,二维标签
+    label = np.empty((0, 2), dtype=np.int32) #制作标签或位置,二维标签
     for i in range(16):
         for j in range(11):
-            filePath = "D:\pythonWork\indoor Location\MeetingSwapData\coordinate" + xLabel[i] + yLabel[j] + ".mat"
+            filePath = "./CSI-dataset/Meeting/coordinate" + xLabel[i] + yLabel[j] + ".mat"
             name = xLabel[i] + yLabel[j]
             if (os.path.isfile(filePath)):
                 newName.append(name)
                 label = np.append(label, [[int(xLabel[i]), int(yLabel[j])]], axis=0)
 
-    c = loadmat('D:\pythonWork\indoor Location\MeetingRoomDataSet.mat')
+    c = loadmat('./MeetingRoomDataSet.mat')
     CSIDataSet = c['csiMatrix'] # 预处理已完成，运行时间长达1.5h，直接加载不再重新计算。数据统一规格3*30*50
-    CSIDataSet = np.reshape(CSIDataSet,(176,3*30*50))
+    # 3 antennas do nothing
+    # CSIDataSet = CSIDataSet[:, 2:3, :, :] # 1 antenna
+    # CSIDataSet = CSIDataSet[:, [0, 2], :, :] # 2 antennas
+    # import pdb; pdb.set_trace()
+    CSIDataSet = np.reshape(CSIDataSet,(176,3*30*50)) # 3 antennas
+    # CSIDataSet = np.reshape(CSIDataSet,(176,1*30*50)) # 1 antenna
+    # CSIDataSet = np.reshape(CSIDataSet,(176,2*30*50)) # 2 antennas
+
     X = Zscorenormalization(CSIDataSet[0:176,:])
     originalCSI = rawCSI()
     Y = label   #用于BLS, MLP, NN, LSTM, MultiOutput Regression
@@ -285,8 +297,8 @@ def main():
 
     pointRowGaussSum = get_gaussian(originalCSI).sum(axis=1)
     normalGauss = pointRowGaussSum / sum(pointRowGaussSum)
-    reconstructData = np.zeros((CSIDataSet.shape[0], CSIDataSet.shape[1]), dtype=np.float)
-    target = np.zeros((CSIDataSet.shape[0], 2), dtype=np.float)
+    reconstructData = np.zeros((CSIDataSet.shape[0], CSIDataSet.shape[1]), dtype=np.float32)
+    target = np.zeros((CSIDataSet.shape[0], 2), dtype=np.float32)
     for i in range(CSIDataSet.shape[0]):
         reconstructData[i] = originalCSI[i, :] * normalGauss[i]
         dataout = 1. / (1 + np.exp(-reconstructData))
